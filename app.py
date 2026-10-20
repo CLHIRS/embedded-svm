@@ -33,7 +33,6 @@ def current_dataset(kind: str, samples: int, overlap: float, seed: int) -> Datas
 
 def configuration_controls() -> dict[str, Any]:
     """Render progressive-disclosure SVM controls and return sklearn settings."""
-    st.subheader("3. SVM configuration")
     st.caption("Start with C. Open the next level only when you need another modelling decision.")
     level = st.radio("Lesson level", ["Basic", "Intermediate", "Advanced"], horizontal=True)
     C = st.slider(
@@ -78,7 +77,18 @@ def configuration_controls() -> dict[str, Any]:
             help="Subtract each training-feature mean and divide by its standard deviation. Usually important when feature units differ; exported linear coefficients are converted back to raw units.",
         )
 
-    st.latex(r"\min_{w,b,\xi}\;\frac{1}{2}\lVert w\rVert^2 + C\sum_i\xi_i \quad \text{subject to}\quad y_i(w^T x_i+b)\geq 1-\xi_i,;\xi_i\geq0")
+    st.latex(r"\min_{w,b,\xi}\;\frac{1}{2}\lVert w\rVert^2 + C\sum_i\xi_i \quad \text{subject to}\quad y_i(w^T x_i+b)\geq 1-\xi_i,\;\xi_i\geq0")
+    st.markdown("**Formula legend**")
+    st.markdown(
+        "| Symbol | Meaning |\n"
+        "| --- | --- |\n"
+        "| $x_i$ | Feature vector for observation $i$ (for example, weight and redness) |\n"
+        "| $y_i$ | Its true class label: Apple or Pear |\n"
+        "| $w$ | Learned feature weights; their direction sets the separating boundary |\n"
+        "| $b$ | Learned offset (intercept) that shifts the boundary |\n"
+        "| $\\xi_i$ | Slack: how much observation $i$ is allowed to enter or cross the margin |\n"
+        "| $C$ | Penalty for slack; the accuracy-versus-margin trade-off control |"
+    )
     st.info("**Think about C:** What changed when C increased—training mistakes, margin width, or the number of support vectors?")
     return config
 
@@ -138,7 +148,6 @@ def show_evaluation(result: TrainingResult, dataset: Dataset, x_axis: str, y_axi
 
 def show_compile_export(result: TrainingResult, dtype: str) -> None:
     """Show a deliberately honest, target-independent deployment view."""
-    st.subheader("5. Compile & export")
     architecture, numeric_type, optimisation = st.columns(3)
     with architecture:
         st.selectbox("Architecture target", ["Generic C", "Cortex-M4", "Cortex-M7"], help="Placeholder target selection for later toolchain integration.")
@@ -167,7 +176,6 @@ def show_compile_export(result: TrainingResult, dtype: str) -> None:
 
 def show_inference(result: TrainingResult, dataset: Dataset) -> None:
     """Let students run a single prediction and inspect the actual score."""
-    st.subheader("6. Interactive inference")
     st.caption("Training learns parameters from many labelled examples. Embedded inference applies the frozen parameters to one new measurement.")
     defaults = result.X_train.median()
     values: list[float] = []
@@ -193,7 +201,6 @@ def show_inference(result: TrainingResult, dataset: Dataset) -> None:
 
 def show_comparison() -> None:
     """Compare compact experiment snapshots kept in session state."""
-    st.subheader("7. Experiment comparison")
     experiments = st.session_state.experiments
     if not experiments:
         st.info("Save two or more trained experiments to compare accuracy against estimated inference cost here.")
@@ -218,16 +225,14 @@ def show_comparison() -> None:
 
 def main() -> None:
     initialise_state()
-    st.title("🍎 SVM Embedded Playground")
+    st.title("🍎 SVM Embedded Playground 🍐")
     st.caption("An interactive lesson on SVM geometry, hyperparameters, and embedded deployment trade-offs.")
 
-    st.header("0. Problem")
-    st.write("A sensor measures fruit properties and must classify each item as an apple or pear. We want good predictions, but an embedded device also has limited memory and compute for each inference.")
-    st.markdown("`Sensor features  →  SVM training  →  decision boundary  →  embedded inference`")
+    with st.expander("0. Problem", expanded=True):
+        st.write("A sensor measures fruit properties and must classify each item as an apple or pear. We want good predictions, but an embedded device also has limited memory and compute for each inference.")
+        st.markdown("`Sensor features  →  SVM training  →  decision boundary  →  embedded inference`")
 
-    st.header("1. Data")
-    controls, preview = st.columns([1, 2])
-    with controls:
+    with st.expander("1. Data", expanded=True):
         dataset_kind = st.selectbox("Dataset", ["Apple vs Pear (synthetic)", "Iris (Setosa vs Versicolor)"], help="The fruit data is purpose-built for this lesson. Iris is a familiar real measurement dataset with two classes selected.")
         samples = st.slider("Number of observations", 40, 200, 120, 10, help="Total labelled observations. The Iris option contains up to 100 binary-class observations.")
         overlap = st.slider("Class overlap / noise", 0.0, 1.0, 0.32, 0.01, help="Higher values make class measurements more variable and closer together. This makes the soft-margin trade-off visible.", disabled=dataset_kind != "Apple vs Pear (synthetic)")
@@ -237,55 +242,62 @@ def main() -> None:
             st.caption("Iris has 100 observations for this binary selection; the app will use all 100.")
     dataset = current_dataset(dataset_kind, samples, overlap, int(seed))
 
-    st.header("2. Feature selection & visualization")
-    f1, f2 = st.columns(2)
-    with f1:
-        selected_features = st.multiselect(
-            "Features used by the SVM", list(dataset.X.columns), default=list(dataset.X.columns[:2]),
-            help="The classifier can use more than two features. More information can help accuracy, but can also increase model storage and inference work.",
-        )
-    with f2:
-        x_axis = st.selectbox("X-axis for the plot", list(dataset.X.columns), index=0, format_func=lambda name: dataset.display_names[name], help="Display choice only; it does not change which features train the model.")
-        y_options = [feature for feature in dataset.X.columns if feature != x_axis]
-        y_axis = st.selectbox("Y-axis for the plot", y_options, index=0, format_func=lambda name: dataset.display_names[name], help="Display choice only. A 2D chart cannot fully show a model trained on three or four features.")
-    with preview:
+    with st.expander("2. Feature selection & visualization", expanded=True):
+        f1, f2 = st.columns(2)
+        with f1:
+            selected_features = st.multiselect(
+                "Features used by the SVM", list(dataset.X.columns), default=list(dataset.X.columns[:2]),
+                help="The classifier can use more than two features. More information can help accuracy, but can also increase model storage and inference work.",
+            )
+        with f2:
+            x_axis = st.selectbox("X-axis for the plot", list(dataset.X.columns), index=0, format_func=lambda name: dataset.display_names[name], help="Display choice only; it does not change which features train the model.")
+            y_options = [feature for feature in dataset.X.columns if feature != x_axis]
+            y_axis = st.selectbox("Y-axis for the plot", y_options, index=0, format_func=lambda name: dataset.display_names[name], help="Display choice only. A 2D chart cannot fully show a model trained on three or four features.")
         st.plotly_chart(data_scatter(dataset, x_axis, y_axis), width="stretch", key="data_preview")
-    st.caption("The selected features train the SVM; the X/Y axes only choose a two-dimensional window into the data.")
+        st.caption("The selected features train the SVM; the X/Y axes only choose a two-dimensional window into the data.")
 
-    config = configuration_controls()
-    with st.expander("Embedded estimate settings"):
+    with st.expander("3. SVM configuration", expanded=True):
+        config = configuration_controls()
+        st.markdown("**Embedded estimate setting**")
         dtype = st.selectbox(
             "Numeric type for estimates and C export", ["float32", "float64"],
             help="Float32 uses four bytes per learned parameter; float64 uses eight. This is a planning assumption, not a measured device configuration.",
         )
-    st.header("4. Training & evaluation")
-    dataset_key = (dataset_kind, len(dataset.X), overlap, int(seed))
-    if not selected_features:
-        st.warning("Select at least one feature before training.")
-    elif st.button("Train SVM", type="primary"):
-        st.session_state.trained_result = train_svm(dataset.X, dataset.y, selected_features, test_split, int(seed), config)
-        st.session_state.trained_dataset_key = dataset_key
-        st.success("Training complete. Explore the evaluation and deployment sections below.")
 
+    dataset_key = (dataset_kind, len(dataset.X), overlap, int(seed))
     result: TrainingResult | None = st.session_state.trained_result
-    if result is not None and st.session_state.trained_dataset_key != dataset_key:
-        st.warning("The dataset has changed since the last training run. Train again before interpreting results or exporting a model.")
-        result = None
+    with st.expander("4. Training & evaluation", expanded=True):
+        if not selected_features:
+            st.warning("Select at least one feature before training.")
+        elif st.button("Train SVM", type="primary"):
+            st.session_state.trained_result = train_svm(dataset.X, dataset.y, selected_features, test_split, int(seed), config)
+            st.session_state.trained_dataset_key = dataset_key
+            result = st.session_state.trained_result
+            st.success("Training complete. Explore the evaluation and deployment sections below.")
+
+        if result is not None and st.session_state.trained_dataset_key != dataset_key:
+            st.warning("The dataset has changed since the last training run. Train again before interpreting results or exporting a model.")
+            result = None
+        if result is not None:
+            show_evaluation(result, dataset, x_axis, y_axis)
+            save_col, name_col = st.columns([1, 3])
+            with name_col:
+                experiment_name = st.text_input("Experiment name", value="", placeholder="e.g., Linear C=1, weight + redness")
+            with save_col:
+                st.write("")
+                if st.button("Save experiment"):
+                    save_experiment(result, experiment_name, dtype)
+                    st.success("Saved for comparison in this browser session.")
+        else:
+            st.info("Set up the first experiment, then choose **Train SVM** to reveal evaluation, compile, and inference views.")
+
     if result is not None:
-        show_evaluation(result, dataset, x_axis, y_axis)
-        save_col, name_col = st.columns([1, 3])
-        with name_col:
-            experiment_name = st.text_input("Experiment name", value="", placeholder="e.g., Linear C=1, weight + redness")
-        with save_col:
-            st.write("")
-            if st.button("Save experiment"):
-                save_experiment(result, experiment_name, dtype)
-                st.success("Saved for comparison in this browser session.")
-        show_compile_export(result, dtype)
-        show_inference(result, dataset)
-    else:
-        st.info("Set up the first experiment, then choose **Train SVM** to reveal evaluation, compile, and inference views.")
-    show_comparison()
+        with st.expander("5. Compile & export", expanded=True):
+            show_compile_export(result, dtype)
+        with st.expander("6. Interactive inference", expanded=True):
+            show_inference(result, dataset)
+    with st.expander("7. Experiment comparison", expanded=True):
+        show_comparison()
 
 
 if __name__ == "__main__":
