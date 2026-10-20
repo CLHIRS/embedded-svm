@@ -190,7 +190,9 @@ def show_inference(result: TrainingResult, dataset: Dataset) -> None:
         observation = pd.DataFrame([values], columns=result.feature_names)
         prediction = int(result.pipeline.predict(observation)[0])
         score = float(result.pipeline.decision_function(observation)[0])
-        st.success(f"Predicted class: **{dataset.class_names[prediction]}**")
+        predicted_name = dataset.class_names[prediction]
+        fruit_symbol = {"Apple": "🍎", "Pear": "🍐"}.get(predicted_name, "")
+        st.success(f"Predicted class: **{fruit_symbol} {predicted_name}**".strip())
         st.write(f"Decision score: `{score:.5f}` (positive means {dataset.class_names[1]}).")
         if result.svc.kernel == "linear":
             raw_score = linear_score(result, values)
