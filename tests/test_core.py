@@ -19,3 +19,5 @@ def test_linear_model_has_small_deterministic_cost():
     estimate = estimate_cost(result, "float32")
     assert estimate.parameter_bytes == 12
     assert estimate.multiplies == 2
+    assert result.training_confusion.sum() == len(result.y_train)
+    assert result.confusion.sum() == len(result.y_test)

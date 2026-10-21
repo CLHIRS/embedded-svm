@@ -136,14 +136,21 @@ def show_evaluation(result: TrainingResult, dataset: Dataset, x_axis: str, y_axi
             st.plotly_chart(data_scatter(dataset, x_axis, y_axis), width="stretch", key="evaluation_data_fallback")
             st.caption("The decision geometry is only overlaid when the SVM uses exactly the two displayed features. A 3+ dimensional model cannot be shown faithfully as one 2D boundary.")
     with right:
-        cm = pd.DataFrame(
+        test_cm = pd.DataFrame(
             result.confusion,
             index=[f"Actual {dataset.class_names[0]}", f"Actual {dataset.class_names[1]}"],
             columns=[f"Predicted {dataset.class_names[0]}", f"Predicted {dataset.class_names[1]}"],
         )
+        train_cm = pd.DataFrame(
+            result.training_confusion,
+            index=[f"Actual {dataset.class_names[0]}", f"Actual {dataset.class_names[1]}"],
+            columns=[f"Predicted {dataset.class_names[0]}", f"Predicted {dataset.class_names[1]}"],
+        )
         st.markdown("**Confusion matrix (test set)**")
-        st.dataframe(cm, width="stretch")
-        st.caption("Training time is a measurement from this browser session; it is not embedded-device timing.")
+        st.dataframe(test_cm, width="stretch", key="test_confusion_matrix")
+        st.markdown("**Confusion matrix (training set)**")
+        st.dataframe(train_cm, width="stretch", key="training_confusion_matrix")
+        st.caption("A much better training matrix than test matrix can indicate overfitting; both performing poorly can indicate underfitting. Training time is a browser-session measurement, not embedded-device timing.")
 
 
 def show_compile_export(result: TrainingResult, dtype: str) -> None:

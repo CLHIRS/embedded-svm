@@ -24,8 +24,10 @@ class TrainingResult:
     X_test: pd.DataFrame
     y_train: pd.Series
     y_test: pd.Series
+    train_predictions: np.ndarray
     predictions: np.ndarray
     metrics: dict[str, float]
+    training_confusion: np.ndarray
     confusion: np.ndarray
     training_ms: float
     feature_names: list[str]
@@ -69,6 +71,7 @@ def train_svm(
     started = perf_counter()
     pipeline.fit(X_train, y_train)
     elapsed = (perf_counter() - started) * 1000
+    train_predictions = pipeline.predict(X_train)
     predictions = pipeline.predict(X_test)
     metrics = {
         "accuracy": accuracy_score(y_test, predictions),
@@ -82,8 +85,10 @@ def train_svm(
         X_test=X_test,
         y_train=y_train,
         y_test=y_test,
+        train_predictions=train_predictions,
         predictions=predictions,
         metrics=metrics,
+        training_confusion=confusion_matrix(y_train, train_predictions, labels=[0, 1]),
         confusion=confusion_matrix(y_test, predictions, labels=[0, 1]),
         training_ms=elapsed,
         feature_names=feature_names,
